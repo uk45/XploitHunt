@@ -8,6 +8,7 @@ You should have received a copy of the GNU General Public License along with thi
 """
 import argparse
 from xlutils.copy import copy
+import subprocess
 import xlwt
 import xlrd
 import os
@@ -23,7 +24,13 @@ sys.setdefaultencoding('utf8')
 import pprint
 import requests
 from googlesearch import search
-
+import time
+def gcookie():
+	for item in os.listdir(os.getcwd()):
+		if item.endswith(".google-cookie"):
+			#os.remove(".google-cookie")
+			os.remove( os.path.join(os.getcwd(), item ) )
+	return "working"
 def internet(url='http://www.google.com/', timeout=5):
 	try:
 		req = requests.get(url, timeout=timeout)
@@ -32,6 +39,11 @@ def internet(url='http://www.google.com/', timeout=5):
 	except requests.ConnectionError:
 		print "Error: Can you please check your Internet Connection?"
 		sys.exit()
+def torstatuss():
+	p =  subprocess.Popen(["systemctl", "is-active",  "tor"], stdout=subprocess.PIPE)
+	(output, err) = p.communicate()
+	output = output.decode('utf-8')
+	return output
 
 def googleActiver(clist,cfile):
 	if clist is not None:
@@ -40,7 +52,6 @@ def googleActiver(clist,cfile):
 		sheet1 = book.add_sheet("XplointHunter")
 		for cvee in clist.split(","):
 			Fcvs,Fauth,Fvultype,Fmetaexploit,FreferB,Fexploitcollect,Fdesc,Fvult= detailfinder(str(cvee.strip()))
-			Gexpl= googlefinder(str(cvee.strip()))
 			sheet1.write(clist.split(",").index(cvee),0,cvee)
 			sheet1.write(clist.split(",").index(cvee),1,Fvult)
 			sheet1.write(clist.split(",").index(cvee),2,Fdesc)
@@ -50,7 +61,16 @@ def googleActiver(clist,cfile):
 			sheet1.write(clist.split(",").index(cvee),6,Fmetaexploit)
 			sheet1.write(clist.split(",").index(cvee),7,FreferB)
 			sheet1.write(clist.split(",").index(cvee),8,Fexploitcollect)
+			if (str(googlestatus)=="on"):
+				Gexpl=googlefinder(str(cvee.strip()))
+			else:
+				Gexpl="Google option is not enabled"			
 			sheet1.write(clist.split(",").index(cvee),9,Gexpl)
+			if (str(odaystatus)=="on"):
+				Odayexp=odayDetailfinder(str(cvee.strip()))
+			else:
+				Odayexp="0day search option is not enabled"
+			sheet1.write(clist.split(",").index(cvee),10,Odayexp)
 		book.save('raw_data.xls')
 		raw_data1=xlrd.open_workbook("raw_data.xls")
 		sheet1=raw_data1.sheet_by_index(0)
@@ -70,6 +90,7 @@ def googleActiver(clist,cfile):
 			sheet2.write(j,7,str(sheet1.cell(i,7).value).strip())
 			sheet2.write(j,8,str(sheet1.cell(i,8).value).strip())
 			sheet2.write(j,9,str(sheet1.cell(i,9).value).strip())
+			sheet2.write(j,10,str(sheet1.cell(i,10).value).strip())
 			j=j+1
 		sheet2.write(0,0,"CVE")
 		sheet2.write(0,1,"Title")
@@ -81,6 +102,7 @@ def googleActiver(clist,cfile):
 		sheet2.write(0,7,"References")
 		sheet2.write(0,8,"Exploit List")
 		sheet2.write(0,9,"Google Results")
+		sheet2.write(0,10,"0day Results")
 		book2.save('CVE-Exploit-Map.xls')
 		os.remove('raw_data.xls')
 	elif cfile is not None:
@@ -100,6 +122,7 @@ def googleActiver(clist,cfile):
 			sheet.write(0,7,"References")
 			sheet.write(0,8,"Exploit List")
 			sheet.write(0,9,"Google Results")
+			sheet.write(0,10,"0day Results")
 			try:
 				vr_raw_data.save("CVE-Exploit-Map.xls")	
 			except:
@@ -107,7 +130,6 @@ def googleActiver(clist,cfile):
 				sys.exit()
 			for j in range(1,fs_num_of_row):
 				Fcvs,Fauth,Fvultype,Fmetaexploit,FreferB,Fexploitcollect,Fdesc,Fvult=detailfinder(str(fs_sheet.cell(j,0).value).strip())
-				Gexpl=googlefinder(str(fs_sheet.cell(j,0).value).strip())
 				sheet.write(j,1,Fvult)
 				sheet.write(j,2,Fdesc)
 				sheet.write(j,3,Fcvs)
@@ -116,110 +138,41 @@ def googleActiver(clist,cfile):
 				sheet.write(j,6,Fmetaexploit)
 				sheet.write(j,7,FreferB)
 				sheet.write(j,8,Fexploitcollect)
+				if (str(googlestatus)=="on"):
+					Gexpl=googlefinder(str(fs_sheet.cell(j,0).value).strip())
+				else:
+					Gexpl="Google option is not enabled"
 				sheet.write(j,9,Gexpl)
+				if (str(odaystatus)=="on"):
+					Odayexp=odayDetailfinder(str(fs_sheet.cell(j,0).value).strip())
+				else:
+					Odayexp="0day search option is not enabled"
+				sheet.write(j,10,Odayexp)
+					
 				vr_raw_data.save("CVE-Exploit-Map.xls")
 	else:
 		print "Wrong Input"
-
-def googleDeactiver(clist,cfile):
-	if clist is not None:
-		print "Manual Mode enabled."
-		book = xlwt.Workbook()
-		sheet1 = book.add_sheet("XplointHunter")
-		for cvee in clist.split(","):
-			Fcvs,Fauth,Fvultype,Fmetaexploit,FreferB,Fexploitcollect,Fdesc,Fvult= detailfinder(str(cvee.strip()))
-			#Gexpl= googlefinder(str(cvee.strip()))
-			sheet1.write(clist.split(",").index(cvee),0,cvee)
-			sheet1.write(clist.split(",").index(cvee),1,Fvult)
-			sheet1.write(clist.split(",").index(cvee),2,Fdesc)
-			sheet1.write(clist.split(",").index(cvee),3,Fcvs)
-			sheet1.write(clist.split(",").index(cvee),4,Fauth)
-			sheet1.write(clist.split(",").index(cvee),5,Fvultype)
-			sheet1.write(clist.split(",").index(cvee),6,Fmetaexploit)
-			sheet1.write(clist.split(",").index(cvee),7,FreferB)
-			sheet1.write(clist.split(",").index(cvee),8,Fexploitcollect)
-			#sheet1.write(clist.split(",").index(cvee),9,Gexpl)
-		book.save('raw_data.xls')
-		raw_data1=xlrd.open_workbook("raw_data.xls")
-		sheet1=raw_data1.sheet_by_index(0)
-		fs_num_of_col1=sheet1.ncols
-		fs_num_of_row1=sheet1.nrows
-		book2 = xlwt.Workbook()
-		sheet2 = book2.add_sheet("XplointHunter")
-		j=1
-		for i in range(0,fs_num_of_row1):
-			sheet2.write(j,0,str(sheet1.cell(i,0).value).strip())
-			sheet2.write(j,1,str(sheet1.cell(i,1).value).strip())
-			sheet2.write(j,2,str(sheet1.cell(i,2).value).strip())
-			sheet2.write(j,3,str(sheet1.cell(i,3).value).strip())
-			sheet2.write(j,4,str(sheet1.cell(i,4).value).strip())
-			sheet2.write(j,5,str(sheet1.cell(i,5).value).strip())
-			sheet2.write(j,6,str(sheet1.cell(i,6).value).strip())
-			sheet2.write(j,7,str(sheet1.cell(i,7).value).strip())
-			sheet2.write(j,8,str(sheet1.cell(i,8).value).strip())
-			#sheet2.write(j,0,str(sheet1.cell(i,9).value).strip())
-			j=j+1
-		sheet2.write(0,0,"CVE")
-		sheet2.write(0,1,"Title")
-		sheet2.write(0,2,"Description")
-		sheet2.write(0,3,"CVSscore")
-		sheet2.write(0,4,"Authenticaton")
-		sheet2.write(0,5,"Vulnerability Type")
-		sheet2.write(0,6,"Metasploit Module")
-		sheet2.write(0,7,"References")
-		sheet2.write(0,8,"Exploit List")
-		#sheet2.write(0,9,"Google Results")
-		book2.save('CVE-Exploit-Map.xls')
-		os.remove('raw_data.xls')
-	elif cfile is not None:
-			print "\nAuto File Mode on:\n"
-			raw_data=xlrd.open_workbook(cfile)
-			vr_raw_data=copy(raw_data)
-			sheet=vr_raw_data.get_sheet(0)
-			fs_sheet=raw_data.sheet_by_index(0)
-			fs_num_of_col=fs_sheet.ncols
-			fs_num_of_row=fs_sheet.nrows
-			sheet.write(0,1,"Title")
-			sheet.write(0,2,"Description")
-			sheet.write(0,3,"CVSscore")
-			sheet.write(0,4,"Authenticaton")
-			sheet.write(0,5,"Vulnerability Type")
-			sheet.write(0,6,"Metasploit Module")
-			sheet.write(0,7,"References")
-			sheet.write(0,8,"Exploit List")
-			#sheet.write(0,9,"Google Results")
-			try:
-				vr_raw_data.save("CVE-Exploit-Map.xls")	
-			except:
-				print "Can you please close the \"CVE-Exploit-Map.xls\" file?"
-				sys.exit()
-			for j in range(1,fs_num_of_row):
-				Fcvs,Fauth,Fvultype,Fmetaexploit,FreferB,Fexploitcollect,Fdesc,Fvult=detailfinder(str(fs_sheet.cell(j,0).value).strip())#Gexpl=googlefinder(str(fs_sheet.cell(j,0).value).strip())
-				sheet.write(j,1,Fvult)
-				sheet.write(j,2,Fdesc)
-				sheet.write(j,3,Fcvs)
-				sheet.write(j,4,Fauth)
-				sheet.write(j,5,Fvultype)
-				sheet.write(j,6,Fmetaexploit)
-				sheet.write(j,7,FreferB)
-				sheet.write(j,8,Fexploitcollect)
-				#sheet.write(j,9,Gexpl)
-				vr_raw_data.save("CVE-Exploit-Map.xls")
-	else:
-		print "Wrong Input"
-			
-
 def googlefinder(cve):
 	print "========================================================"
-	query = [str(cve),"site:exploit-db.com intext:"+str(cve),"intext:"+str(cve),str(cve)+" "+"POC",str(vult)+" "+"exploit"]
-	expp=[]
+	#query = ["site:exploit-db.com intext:"+str(cve),"intext:"+str(cve),str(cve)+" "+"POC",str(vult)+" "+"POC"]
 	print "GoOgle BOT is ready to serve you....!!"
+	expp=[]
+	query=[]
+	googletxt=open("google-payload.txt", "r")
+	googlepay=googletxt.readlines()
+	googletxt.close
+	for g in googlepay:
+		gg=g.replace("?",str(cve))
+		query.append(str(gg))
+	query.append(str(vult)+" "+"POC")
+	print "CVE-ID:"+str(cve)
 	print "Lapse to wait:"+str(args.SleepTime)
 	print "Google Search Count:"+str(args.SearchCount)
 	blackh = open("blacklist-host.txt", "r")
 	blackhost=blackh.readlines()
 	blackh.close
 	for i in query:
+		gcookie()
 		#time.sleep(5)
 		if "No title found in Description" in str(i):
 			pass
@@ -243,6 +196,31 @@ def googlefinder(cve):
 	expp2=list(set(expp))
 	print "========================================================"
 	return "\n".join(expp2)
+def odayDetailfinder(concve):
+	print "========================================================\n"
+	print "0day Search enabled...Entering into Dark web!"
+	session = requests.session()
+	oday=[]
+	session.proxies = {}
+	session.proxies['http'] = 'socks5h://localhost:9050'
+	session.proxies['https'] = 'socks5h://localhost:9050'
+	conurl="http://mvfjfugdwgc5uwho.onion"
+	#concve=str(concve)
+	value={'agree':'Yes, I agree'}
+	conr=session.post(conurl,data=value)
+	url ="http://mvfjfugdwgc5uwho.onion/search?search_request=&search_type=1&category=-1&platform=-1&price_from=0&price_to=10000&author_login=&cve="+concve
+	r = session.get(url)
+	soup= BeautifulSoup(r.text, 'html.parser')
+	right_table=soup.find('div',attrs={'class': re.compile("^ExploitTableContent")})
+
+	for meta in right_table.find_all("a"):
+		#print meta.get("href")
+		if re.search(r"\/exploit.*",str(meta.get("href"))) is not None:
+			rawexp=re.search(r"\/exploit.*",str(meta.get("href"))).group()
+			rawexp1="http://mvfjfugdwgc5uwho.onion"+str(rawexp)
+			print rawexp1
+			oday.append(rawexp1)
+	return "\n".join(oday)
 
 def detailfinder(x):
 	print "========================================================"
@@ -462,8 +440,9 @@ if __name__ == '__main__':
 	parser.add_argument("-g", "--google", dest="GoogleSearch", default="off",help="Provide a \"on\" or \"off\" option to enable or disable google search options. (Default:off)")
 	parser.add_argument("-l", "--limit", dest="SearchCount", default="5",help="Limit the number of results. (Default:5)")
 	parser.add_argument("-t", "--time", dest="SleepTime", default="15",help="Lapse to wait between HTTP requests. Lapse too short may cause Google to block your IP. Keeping significant lapse will make your program slow but its safe and better option. (Default:15)")
+	parser.add_argument("-z", "--zeroday", dest="OdaySearch", default="off",help="Provide a \"on\" or \"off\" option to enable or disable 0day search options. (Default:off)")
 	args = parser.parse_args()
-	
+	gcookie()
 	internet()
 	try:
 		os.remove("CVE-Exploit-Map.xls")
@@ -477,10 +456,13 @@ if __name__ == '__main__':
 	print "        Copyright (C) 2019 Umang, Under GNU GPL V3 License"
 	print "========================================================"
 	vult=""
-	if str(args.GoogleSearch).strip() == "on":
-		print "Google Search is enabled."
-		googleActiver(args.cveList,args.cveFile)
-	elif str(args.GoogleSearch).strip() == "off":
-		print "Google Search is not enabled."
-		googleDeactiver(args.cveList,args.cveFile)
+	odaystatus=str(args.OdaySearch)
+	if (odaystatus == "on"):
+		print "Enabling Tor Service...\n"
+		print "Welcom to the Dark Web"
+		os.system("service tor start")
+		time.sleep(5)
+	googlestatus=str(args.GoogleSearch)
+	googleActiver(args.cveList,args.cveFile)
+	os.system("service tor stop")
 """Copyright (C) 2019 Umang Under GNU GPL V3 License"""
