@@ -86,6 +86,8 @@ search engines and websites by providing the CVE-ID:
 
 **Usage Examples:**
 
+![XploitHunt-Help](https://i.ibb.co/qdDVQMR/2.png)
+
 1.  Normal scan without google and 0day search
 
     1.  Python XploitHunt.py –c CVE-2019-0708
@@ -115,10 +117,18 @@ search engines and websites by providing the CVE-ID:
 Open the “blacklist-host.txt” file and add the host name which you want to
 blacklist.
 
+![Blacklist-host-file](https://i.ibb.co/8bfgHzP/5.png)
+
 **Google Dorks setup:**
 
-Open the “” file and add the google dorks which want (i.e. intext=?) Or (i.e.
-intext:? Site:exploit-db.com)
+Open the “google-payload” file and add the google dorks which you want (i.e.
+intext=?) Or (i.e. intext:? Site:exploit-db.com)
+
+![Google-Dorks-file](https://i.ibb.co/h22zC63/6.png)
+
+**OutPut:**
+
+![CVE-Exploit-Map.xlsx](https://i.ibb.co/nmKv9q2/4.png)
 
 **LIMITIATIONS**
 
