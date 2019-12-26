@@ -14,21 +14,26 @@ import xlrd
 import os
 import os.path
 import sys
-reload(sys)
-sys.setdefaultencoding("utf-8")
+if sys.version[0] == '2':
+	reload(sys)
+	sys.setdefaultencoding("utf-8")
+else:
+	from importlib import reload
 import re
 from bs4 import BeautifulSoup
 from netaddr import *
-reload(sys)
-sys.setdefaultencoding('utf8')
 import pprint
 import requests
 from googlesearch import search
 import time
+import datetime
+from datetime import date
+import shutil
+import glob
+
 def gcookie():
 	for item in os.listdir(os.getcwd()):
 		if item.endswith(".google-cookie"):
-			#os.remove(".google-cookie")
 			os.remove( os.path.join(os.getcwd(), item ) )
 	return "working"
 def internet(url='http://www.google.com/', timeout=5):
@@ -37,7 +42,7 @@ def internet(url='http://www.google.com/', timeout=5):
 		req.raise_for_status()
 		return True
 	except requests.ConnectionError:
-		print "Error: Can you please check your Internet Connection?"
+		print ("\033[1;31;40mError:\033[0;0m Can you please check your Internet Connection?")
 		sys.exit()
 def torstatuss():
 	p =  subprocess.Popen(["systemctl", "is-active",  "tor"], stdout=subprocess.PIPE)
@@ -45,9 +50,59 @@ def torstatuss():
 	output = output.decode('utf-8')
 	return output
 
+def awsmPoc(awpoc):
+	awm=[]
+	#Thank you "Syue Siang Su" for Awsome POC collection repository
+	if (os.path.isdir(str(os.getcwd())+"/"+"awesome-cve-poc")):
+		if str((datetime.datetime.fromtimestamp(os.path.getctime(str(os.getcwd())+"/"+"awesome-cve-poc/README.md"))).strftime('%Y-%m-%d')).strip() == str(date.today()).strip():
+			print ("\033[1;31;40mAwsome CVE POC:\033[0;0mGreat you have updated Awsome-CVE-POC Data")
+			intxt=open(str(os.getcwd())+"/"+"awesome-cve-poc/README.md", "r")
+			intxtout=intxt.readlines()
+			intxt.close
+		else:
+			print ("\033[1;31;40mAwsome CVE POC:\033[0;0mUpdating CVE POC Data")
+			shutil.rmtree("awesome-cve-poc")
+			os.system("git clone https://github.com/qazbnm456/awesome-cve-poc.git")
+			intxt=open(str(os.getcwd())+"/"+"awesome-cve-poc/README.md", "r")
+			intxtout=intxt.readlines()
+			intxt.close
+	else:
+		try:
+			print ("\033[1;31;40mAwsome CVE POC:\033[0;0mClonning is in Process..!")
+			os.system("git clone https://github.com/qazbnm456/awesome-cve-poc.git")
+			intxt=open(str(os.getcwd())+"/"+"awesome-cve-poc/README.md", "r")
+			intxtout=intxt.readlines()
+			intxt.close
+		except:
+			print ("\033[1;31;40mGit reposetory issue or internet is not working..skipping Awsome CVE POC checks\033[0;0m")
+			return "Awsome POC CVE-Skipped"
+				
+	for jk in intxtout:
+		if re.search(r"\[CVE.*\]",str(jk)) is not None:
+			if str(awpoc).strip() == str(re.search(r"\[CVE.*\]",str(jk)).group().replace("[","").replace("]","")).strip():
+				if re.search(r"\[CVE.*\(http",str(jk)) is not None:
+					print ("\033[1;32;40mAwsome POC:\033[0;0m"+str(re.search(r"\(http.*\)",str(jk)).group().replace("(","").replace(")","")))
+					return str(re.search(r"\(http.*\)",str(jk)).group().replace("(","").replace(")",""))
+				else :
+					for fl in glob.glob(str(os.getcwd())+"/"+"awesome-cve-poc/*.md"):
+						if str(os.getcwd())+"/"+"awesome-cve-poc/"+str(awpoc).strip()+".md" == str(fl).strip():
+							
+							awm.append(str(fl).strip())
+			else:
+				pass
+	if awm:
+		awm2=list(set(awm))
+		print ("\033[1;32;40mAwsome POC System Path:\033[0;0m")
+		print ("\n".join(awm2))
+		print ("====================================================")
+		return ("\n".join(awm2))
+	else:
+		print ("Awsome POC: no Data")		
+		return ("Awsome POC: no Data")
+
 def googleActiver(clist,cfile):
 	if clist is not None:
-		print "Manual Mode enabled."
+		print ("\033[1;31;40mManual Mode enabled.\033[0;0m")
 		book = xlsxwriter.Workbook('raw_data.xlsx', {'strings_to_urls': False})
 		sheet1 = book.add_worksheet("XplointHunter")
 		for cvee in clist.split(","):
@@ -106,13 +161,12 @@ def googleActiver(clist,cfile):
 		book2.close()
 		os.remove('raw_data.xlsx')
 	elif cfile is not None:
-			print "\nDont worry i will take care of all CVE-IDs..Go and have some coffee\n"
+			print ("\n\033[1;31;40mFile Mode:\033[1;32;40m Don\'t worry i will take care of all CVE-IDs. Go and have some coffee!\033[0;0m\n")
 			intxt=open(cfile, "r")
 			intxtout=intxt.readlines()
 			intxt.close
 			book3 = xlsxwriter.Workbook('raw_data1.xlsx', {'strings_to_urls': False})
 			sheet3 = book3.add_worksheet("XplointHunter")
-			#book3.close()
 			for j in intxtout:
 				Fcvs,Fauth,Fvultype,Fmetaexploit,FreferB,Fexploitcollect,Fdesc,Fvult=detailfinder(str(j).strip())
 				sheet3.write(intxtout.index(j),0,str(j).strip())
@@ -170,11 +224,11 @@ def googleActiver(clist,cfile):
 			book4.close()
 			os.remove('raw_data1.xlsx')
 	else:
-		print "Usage: XploitHunt.py -h"
+		print ("\033[1;31;40mUsage: XploitHunt.py -h\033[0;0m")
 def googlefinder(cve):
-	print "======================================================================================="
+	print ("=======================================================================================")
 	#query = ["site:exploit-db.com intext:"+str(cve),"intext:"+str(cve),str(cve)+" "+"POC",str(vult)+" "+"POC"]
-	print "GoOgle BOT is ready to serve you....!!"
+	print ("\033[1;32;40mGoOgle BOT is ready to serve you....!! \033[0;0m")
 	internet()
 	expp=[]
 	query=[]
@@ -185,9 +239,9 @@ def googlefinder(cve):
 		gg=g.replace("?",str(cve))
 		query.append(str(gg))
 	query.append(str(vult)+" "+"POC")
-	print "CVE-ID:"+str(cve)
-	print "Lapse to wait:"+str(args.SleepTime)
-	print "Google Search Count:"+str(args.SearchCount)
+	print ("\033[1;30;40mCVE-ID:\033[0;0m"+str(cve))
+	print ("\033[1;32;40mLapse to wait:\033[0;0m"+str(args.SleepTime))
+	print ("\033[1;32;40mGoogle Search Count:\033[0;0m"+str(args.SearchCount))
 	blackh = open("blacklist-host.txt", "r")
 	blackhost=blackh.readlines()
 	blackh.close
@@ -197,30 +251,33 @@ def googlefinder(cve):
 		if "No title found in Description" in str(i):
 			pass
 		else:
-			print "Searching for:"+str(i)
+			print ("\033[1;32;40mSearching for:\033[0;0m"+"\033[1;36;40m"+str(i)+"\033[0;0m")
 			try:
+				#Thank you "MarioVilas" for awsome work
 				for j in search(i, tld="com", num=int(args.SearchCount), start=0,stop=int(args.SearchCount),pause=float(args.SleepTime), user_agent="Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.0)"):
 					#time.sleep(5)
 					if any(str(bl).strip() in str(j).strip() for bl in blackhost):
 						pass
 					else:
-						print j
+						print (j)
 						expp.append(j)
 			except:
 				IPB="Google Blocked requests"
 				expp.append(IPB)
-				print "Unable to make request"
+				print ("Unable to make request")
 				expp3=list(set(expp))
 				return "\n".join(expp3)
 
 	expp2=list(set(expp))
-	print "======================================================================================="
-	return "\n".join(expp2)
+	print ("=======================================================================================\n")
+	print ("\033[1;32;40mGoogle Filter Results:\033[0;0m")
+	print ("\n".join(expp2))
+	return ("\n".join(expp2))
 
 def odayDetailfinder(concve):
-	print "=======================================================================================\n"
-	print "Lets try luck at 0day..!"
-	print "CVE-ID: "+str(concve)
+	print ("=======================================================================================\n")
+	print ("\033[1;32;40mLets try luck at 0day..! \033[0;0m")
+	print ("\033[1;30;40mCVE-ID: \033[0;0m"+str(concve))
 	session = requests.session()
 	oday=[]
 	cvex=[]
@@ -235,7 +292,7 @@ def odayDetailfinder(concve):
 			conr=session.post(conurl,data=value)
 			conr.raise_for_status()
 		except requests.ConnectionError:
-			print "TOR Error:Restarting Tor service"
+			print ("\033[1;31;40mTOR Error:\033[0;0mRestarting Tor service")
 			os.system("service tor restart")
 			time.sleep(2)
 			continue
@@ -252,7 +309,7 @@ def odayDetailfinder(concve):
 				if re.search(r"\/exploit.*",str(meta.get("href"))) is not None:
 					rawexp=re.search(r"\/exploit.*",str(meta.get("href"))).group()
 					rawexp1="http://mvfjfugdwgc5uwho.onion"+str(rawexp)
-					print "Verifying URL: "+str(rawexp1)
+					print ("\033[1;31;40mVerifying URL:\033[0;0m"+str(rawexp1))
 					right_table2=soup.findAll('div',attrs={'class': re.compile("^td allow_tip")})
 					if right_table2 is not None:
 						for jk in right_table2:
@@ -264,17 +321,231 @@ def odayDetailfinder(concve):
 										oday.append(rawexp1)
 		oday1=list(set(oday))
 		if oday1:
-			print "Exploit Confirmed : "+"\n".join(oday1)
+			print ("\033[1;32;40mExploit Confirmed:\033[0;0m")
+			print ("\n".join(oday1))
+			return ("\n".join(oday1))
 		else:
-			print "The Url does not contain CVE-Id"	
+			print ("\033[1;32;40m0Day Says: The Exploit URL does not contain mentioned CVE-Id \033[0;0m")
+			return "No Exploit found"
+
+def CsvDloader(cscve):
+	explo=""
+	csdesc=""
+	csscore=""
+	auth=""
+	refer=[]
+	exploitt=[]
+	
+	r= requests.get("https://cxsecurity.com/cveshow/"+str(cscve))
+	r.text[0:]
+	soup=BeautifulSoup(r.text,'html.parser')
+	
+	csdesc=soup.find('td',attrs={'width': re.compile("^258"),'bgcolor': re.compile("^#202020"),'align': re.compile("^left")}).get_text()
+	center_table=soup.find_all('table',attrs={'width': re.compile("^100%"),'border': re.compile("^0"),'cellpadding': re.compile("^0"),'style': re.compile("^border-collapse: collapse;")})
+	
+	refer_table=soup.find_all('table',attrs={'width': re.compile("^70%"),'border': re.compile("^0"),'cellpadding': re.compile("^0"),'style': re.compile("^border-collapse: collapse;"),'cellspacing': re.compile("^0")})
+	adv_table=soup.find_all('table',attrs={'width': re.compile("^100%"),'border': re.compile("^0"),'cellpadding': re.compile("^0"),'style': re.compile("^border-collapse: collapse;"),'cellspacing': re.compile("^0")})
+	print ("\033[1;32;40mDescription:\033[0;0m \n"+str(csdesc)+"\n")
+	if "aka" in str(csdesc):
+		try:
+			akf=str(csdesc).replace("\'","\"")
+			print ("\033[1;32;40mVulnerability Title:\033[0;0m"+str(re.search(r"aka.*\"",str(akf)).group().replace("aka",""))+"\n")
+			vult=re.search(r"aka.*\"",str(akf)).group().replace("aka","")
+			#print "Title:"+str(vult)
+		except:
+			print ("\033[1;32;40mVulnerability Title:\033[0;0m No title Found in Description")
+			vult="No title found in Description"
+			pass
 	else:
-		print "Exploit: No exploit Found"
-		return "No Exploit found"
-	return "\n".join(oday1)
+		print ("\033[1;32;40mVulnerability Title:\033[0;0m No title Found in Description")
+		vult="No title found in Description"
+	if adv_table is not None:
+		for j in range(len(adv_table)):
+			if adv_table[j].find_all('a') is not None:
+				for meta in adv_table[j].find_all('a'):
+					if "https://cxsecurity.com/issue" in str(meta.get("href")):
+						exploitt.append(meta.get("href"))
+
+	if center_table is not None:
+		for i in range(len(center_table)):
+			#print center_table[i].find('h6')
+			cen2=center_table[i].find('td',attrs={'width': re.compile("^258"),'bgcolor': re.compile("^#202020")})
+			if cen2 is not None:
+				if cen2.find('span') is not None:
+					#print cen2.find('span').get_text()
+					csscore=cen2.find('span').get_text()
+					print ("\033[1;32;40mCVSS Score:\033[0;0m"+str(csscore))
+			cen3=center_table[i].find('td',attrs={'width': re.compile("^258"),'bgcolor': re.compile("^#1B1B1B")})
+			if cen3 is not None:
+				if cen3.find('center') is not None:
+					if "<span" in str(cen3.find('center')):
+						pass
+					else:
+						explo=cen3.find('center').get_text()
+						print ("\033[1;32;40mVulnerability Type:\033[0;0m"+str(explo))
+			cen4=center_table[i].find('td',attrs={'width': re.compile("^259"),'bgcolor': re.compile("^#1B1B1B")})
+			if cen4 is not None:
+				if cen4.find('center') is not None:
+					if "<span" in str(cen4.find('center')):
+						pass
+					else:
+						auth=cen4.find('center').get_text()
+						print ("\033[1;32;40mAuthentication Type:\033[0;0m "+str(auth))
+
+	if refer_table is not None:
+		for i in range(len(refer_table)):
+			tmp=refer_table[i].find_all('div',attrs={'onclick': re.compile("^window.open")})
+			if tmp is not None:
+				for ii in range(len(tmp)):
+					refer.append(str(tmp[ii].get_text()))
+	print ("\033[1;32;40mReferences:\033[0;0m")
+	exploittmp=list(set(exploitt))
+	refertmp=list(set(refer))
+	for link in refer:
+		print (link)
+			#Analyzing url for exploits
+		if "www.exploit-db.com/exploits" in str(link):
+			print ("Exploit-db link:"+str(link))
+			exploittmp.append(link)
+		elif "www.rapid7.com/db" in str(link):
+			print ("Rapid7 Link: "+str(link))
+			exploittmp.append(link)
+		elif "packetstormsecurity.com/files" in str(link):
+			print ("PacketStrom Advisories: "+str(link))
+			exploittmp.append(link)
+		elif "www.tenable.com/security/research" in str(link):
+			print ("Tenable Advisories: "+str(link))
+			exploittmp.append(link)
+		elif "hackerone.com" in str(link):
+			print ("HackerOne Reports: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "seclists.org/fulldisclosure" in str(link):
+			print ("Seclist Archives: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "www.cloudfoundry.org/blog/" in str(link):
+			print ("Need to verify: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "iwantacve.cn/index.php/archives" in str(link):
+			print ("Need to verify: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "ssd-disclosure.com/archives/" in str(link):
+			print ("POC : "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "www.youtube.com" in str(link):
+			print ("Video POC : "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "youtu.be" in str(link):
+			print ("Video POC : "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "twitter.com" in str(link):
+			print ("Twitter POC : "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "blog.0x42424242.in" in str(link):
+			print ("Blog : "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "medium.com" in str(link):
+			print ("POC on Medium: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "pentest.com.tr/exploits" in str(link):
+			print ("POC on unknwon blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "rhinosecuritylabs.com" in str(link):
+			print ("Security Vendor Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "zer0-day.pw/articles" in str(link):
+			print ("Security Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "research.digitalinterruption.com" in str(link):
+			print ("Securit Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "neetech18.blogspot.com" in str(link):
+			print ("Security Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "www.vulnerability-lab.com" in str(link):
+			print ("Security Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "armin.dev/blog" in str(link):
+			print ("Security Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "lists.openwall.net/full-disclosure" in str(link):
+			print ("Openwall Disclosure: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "vdalabs.com" in str(link):
+			print ("Security Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "www.nccgroup.trust/uk/our-research" in str(link):
+			print ("Security Vendor Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "pastebin.com" in str(link):
+			print ("Pastebin: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "www.detack.de/en" in str(link):
+			print ("Security Vendor Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "www.detack.de/en" in str(link):
+			print ("Security Vendor Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "www.pluginvulnerabilities.com" in str(link):
+			print ("Wordpress Plugin: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "talosintelligence.com/vulnerability_reports" in str(link):
+			print ("Security Vendor Blog: "+str(link))
+			exploittmp.append(link.get("href"))
+		elif "blog.hivint.com" in str(link):
+			print ("Security Blog: "+str(link))
+			exploittmp.append(link)
+		
+		elif "www.securityfocus.com/bid/" in str(link):
+			Lurl=str(link)+"/exploit"
+			print ("\033[1;30;40mChecking exploit details in: \033[0;0m"+str(link))
+			hurl=requests.get(Lurl)
+			hurl.text[0:]
+			soup2= BeautifulSoup(hurl.text, 'html.parser')
+			is_present = bool(re.search('You have entered a malformed request',hurl.text))
+			if is_present == True:
+				print ("\033[1;31;40mSecurityfocuse found autobot request, Check URL manually  \033[0;0m")
+				time.sleep(2)
+				exploittmp.append("Not Confirm:"+str(link))
+			else:
+				right_table5=soup2.find('div',attrs={'id': re.compile("^vulnerability")})
+				if right_table5 is not None:
+					right_table6=right_table5.find_all('a')
+					if right_table6 is not None:
+						for link2 in right_table6:
+							exploittmp.append("https://www.securityfocus.com/"+str(link2.get('href')))
+					if any("Reports indicate" in s for s in right_table5):
+						print ("Exploit found:"+str(link))
+						exploittmp.append(link.get("href"))
+					elif any("An attacker can" in s for s in right_table5):
+						print ("Exploit found:"+str(link))
+						exploittmp.append(link.get("href"))
+					elif any("researchers" in s for s in right_table5):
+						print ("Exploit found:"+str(link))
+						exploittmp.append(link.get("href"))
+					elif any("Metasploit" in s for s in right_table5):
+						print ("Exploit found:"+str(link))
+						exploittmp.append(link.get("href"))
+					elif any("we are not aware of any working exploits" in s for s in right_table5):
+						print ("Scurityfocus: No exploit detail found")
+					elif any("Please see the references" in s for s in right_table5):
+						print ("POC found:"+str(link))
+						exploittmp.append(link)
+					else:
+						print ("\033[1;31;40mNo Exploit found\033[0;0m \n")
+		else:
+			refertmp.append(link)
+	exploittmp.append(awsmPoc(str(cscve)))
+	print ("\n")
+	print ("\033[1;31;40mExploit Details:\033[0;0m")
+	exploittmp2=list(set(exploittmp))
+	for ii in exploittmp2:
+		print (ii)
+	refertmp2=list(set(refertmp))
+	return explo,csdesc,csscore,auth,"\n".join(refertmp2),"\n".join(exploittmp2),vult
 
 def detailfinder(x):
-	print "======================================================================================="
-	print "CVE-ID: "+str(x)
+	print ("=======================================================================================")
+	print ("\033[1;32;40mCVE-ID:\033[0;0m "+str(x))
 	D=[]
 	cvcnum=[]
 	referB=[]
@@ -288,8 +559,12 @@ def detailfinder(x):
 	#print soup
 	if "This site only contains valid CVE entries" in str(soup):
 		return "No data","No data","No data","No data","No data","No data","No data","No data"
+	elif "Unknown CVE ID" in str(soup):
+		exp,csde,cdsc,authh,referr,exppext,vult=CsvDloader(x)
+		exploitrang="Exploit Range("+str(exp)+")"
+		return cdsc,authh,exploitrang,"No data",referr,exppext,csde,vult
 	else:
-		print "Hunting for Exploit:\n"
+		print ("Hunting for Exploit:\n")
 	right_table=soup.find('table',class_='details')
 	right_table2=soup.find('table',id='vulnrefstable')
 	right_table3=soup.find('div',attrs={'style': re.compile("^background-color:")})
@@ -299,13 +574,19 @@ def detailfinder(x):
 	#Description_gathering
 	desc1=right_table7.get_text(strip=True)
 	desc2=re.search(r"^.*Publish Date",str(desc1)).group().replace("Publish Date","")
-	print "Description:\n"+str(desc2)+"\n"
+	print ("\033[1;32;40mDescription:\033[0;0m \n"+str(desc2)+"\n")
 	if any("aka" in s for s in right_table7):
-		print "Vulnerability title:"+str(re.search(r"aka.*",str(desc2)).group().replace("aka",""))+"\n"
-		vult=re.search(r"aka.*",str(desc2)).group().replace("aka","")
-		#print "Title:"+str(vult)
+		try:
+			akf=str(desc2).replace("\'","\"")
+			print ("\033[1;32;40mVulnerability Title:\033[0;0m"+str(re.search(r"aka.*\"",str(akf)).group().replace("aka",""))+"\n")
+			vult=re.search(r"aka.*\"",str(akf)).group().replace("aka","")
+			#print "Title:"+str(vult)
+		except:
+			print ("\033[1;32;40mVulnerability Title:\033[0;0m No title Found in Description")
+			vult="No title found in Description"
+			pass
 	else:
-		print "Title:No title Found in Description"
+		print ("\033[1;32;40mVulnerability Title:\033[0;0m No title Found in Description")
 		vult="No title found in Description"
 	#filter data-CVSscore-Auth status-vulnerability type
 	for row in right_table.find_all("tr"):
@@ -314,7 +595,7 @@ def detailfinder(x):
 	
 	for tt in right_table3:
 		cvcnum.append(str(tt))
-		print "CVSS Score: "+str(tt)
+		print ("\033[1;32;40mCVSS Score:\033[0;0m"+str(tt))
 
 	#D has all data which we required
 	D=filter(None, D)
@@ -322,136 +603,140 @@ def detailfinder(x):
 	try:
 		auth=re.search(r">.*</",str(D[4])).group()
 		auth=auth.replace('>','').replace('</','')
-		print "Authentication Type: "+str(auth)
+		print ("\033[1;32;40mAuthentication Type:\033[0;0m "+str(auth))
 	except:
-		print "Authentication Type: Not Define"
+		print ("\033[1;32;40mAuthentication Type:\033[0;0m Not Define")
 		auth="Not Define"
 	#Vulnerability type
 	try:
 		vultype=re.search(r">.*</",str(D[6])).group()
 		vultype=vultype.replace('>','').replace('</','')
-		print "Vulnerability Type: "+str(vultype)
+		print ("\033[1;32;40mVulnerability Type:\033[0;0m"+str(vultype))
 	except:
-		print "Vulnerability Type: Not Define"
+		print ("\033[1;32;40mVulnerability Type:\033[0;0m Not Define")
 		vultype="Not Define"
 		pass
-	print "\n"
+	print ("\n")
 	#Metasploit module details
-	print "Metasploit Module:"
+	print ("\033[1;32;40mMetasploit Module Details:\033[0;0m")
 	for meta in right_table4.find_all("a"):
-		print "Metasploit Module: "+str(meta.get("href"))
-		metaexploit.append(meta.get("href"))
-	print "\n"
+
+		if str("http://www.metasploit.com")==str(meta.get("href")):
+			metaexploit.append("No module Found")
+			pass
+		else:
+			print ("Metasploit Module: "+str(meta.get("href")))
+			metaexploit.append(meta.get("href"))
+	print ("\n")
 	#Reference Data
-	print "References:"
+	print ("\033[1;32;40mReferences:\033[0;0m")
 	if right_table2 is None:
-		print "No Reference found"
+		print ("\033[1;31;40mNo Reference found\033[0;0m")
 		return ";".join(cvcnum),auth,vultype,"\n".join(metaexploit),"No Reference found","No Exploit found",desc2,vult
 	else:
-		print ""
+		print ("")
 	for link in right_table2.find_all("a"):
 		#Analyzing url for exploits
 		if "www.exploit-db.com/exploits" in str(link.get("href")):
-			print "Exploit-db link:"+str(link.get("href"))
+			print ("Exploit-db link:"+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "www.rapid7.com/db" in str(link.get("href")):
-			print "Rapid7 Link: "+str(link.get("href"))
+			print ("Rapid7 Link: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "packetstormsecurity.com/files" in str(link.get("href")):
-			print "PacketStrom Advisories: "+str(link.get("href"))
+			print ("PacketStrom Advisories: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "www.tenable.com/security/research" in str(link.get("href")):
-			print "Tenable Advisories: "+str(link.get("href"))
+			print ("Tenable Advisories: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "hackerone.com" in str(link.get("href")):
-			print "HackerOne Reports: "+str(link.get("href"))
+			print ("HackerOne Reports: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "seclists.org/fulldisclosure" in str(link.get("href")):
-			print "Seclist Archives: "+str(link.get("href"))
+			print ("Seclist Archives: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "www.cloudfoundry.org/blog/" in str(link.get("href")):
-			print "Need to verify: "+str(link.get("href"))
+			print ("Need to verify: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "iwantacve.cn/index.php/archives" in str(link.get("href")):
-			print "Need to verify: "+str(link.get("href"))
+			print ("Need to verify: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "ssd-disclosure.com/archives/" in str(link.get("href")):
-			print "POC : "+str(link.get("href"))
+			print ("POC : "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "www.youtube.com" in str(link.get("href")):
-			print "Video POC : "+str(link.get("href"))
+			print ("Video POC : "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "youtu.be" in str(link.get("href")):
-			print "Video POC : "+str(link.get("href"))
+			print ("Video POC : "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "twitter.com" in str(link.get("href")):
-			print "Twitter POC : "+str(link.get("href"))
+			print ("Twitter POC : "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "blog.0x42424242.in" in str(link.get("href")):
-			print "Blog : "+str(link.get("href"))
+			print ("Blog : "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "medium.com" in str(link.get("href")):
-			print "POC on Medium: "+str(link.get("href"))
+			print ("POC on Medium: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "pentest.com.tr/exploits" in str(link.get("href")):
-			print "POC on unknwon blog: "+str(link.get("href"))
+			print ("POC on unknwon blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "rhinosecuritylabs.com" in str(link.get("href")):
-			print "Security Vendor Blog: "+str(link.get("href"))
+			print ("Security Vendor Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "zer0-day.pw/articles" in str(link.get("href")):
-			print "Security Blog: "+str(link.get("href"))
+			print ("Security Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "research.digitalinterruption.com" in str(link.get("href")):
-			print "Securit Blog: "+str(link.get("href"))
+			print ("Securit Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "neetech18.blogspot.com" in str(link.get("href")):
-			print "Security Blog: "+str(link.get("href"))
+			print ("Security Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "www.vulnerability-lab.com" in str(link.get("href")):
-			print "Security Blog: "+str(link.get("href"))
+			print ("Security Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "armin.dev/blog" in str(link.get("href")):
-			print "Security Blog: "+str(link.get("href"))
+			print ("Security Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "lists.openwall.net/full-disclosure" in str(link.get("href")):
-			print "Openwall Disclosure: "+str(link.get("href"))
+			print ("Openwall Disclosure: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "vdalabs.com" in str(link.get("href")):
-			print "Security Blog: "+str(link.get("href"))
+			print ("Security Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "www.nccgroup.trust/uk/our-research" in str(link.get("href")):
-			print "Security Vendor Blog: "+str(link.get("href"))
+			print ("Security Vendor Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "pastebin.com" in str(link.get("href")):
-			print "Pastebin: "+str(link.get("href"))
+			print ("Pastebin: "+str(link.get("href")))
+			exploitcollect.append(link.get("href"))
+		elif ("www.detack.de/en" in str(link.get("href"))):
+			print ("Security Vendor Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "www.detack.de/en" in str(link.get("href")):
-			print "Security Vendor Blog: "+str(link.get("href"))
-			exploitcollect.append(link.get("href"))
-		elif "www.detack.de/en" in str(link.get("href")):
-			print "Security Vendor Blog: "+str(link.get("href"))
+			print ("Security Vendor Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "www.pluginvulnerabilities.com" in str(link.get("href")):
-			print "Wordpress Plugin: "+str(link.get("href"))
+			print ("Wordpress Plugin: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "talosintelligence.com/vulnerability_reports" in str(link.get("href")):
-			print "Security Vendor Blog: "+str(link.get("href"))
+			print ("Security Vendor Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		elif "blog.hivint.com" in str(link.get("href")):
-			print "Security Blog: "+str(link.get("href"))
+			print ("Security Blog: "+str(link.get("href")))
 			exploitcollect.append(link.get("href"))
 		
 		elif "www.securityfocus.com/bid/" in str(link.get("href")):
 			Lurl=str(link.get("href"))+"/exploit"
-			print "Checking exploit details in: "+str(link.get("href"))
-			internet()
+			print ("\033[1;30;40mChecking exploit details in: \033[0;0m"+str(link.get("href")))
 			hurl=requests.get(Lurl)
 			hurl.text[0:]
 			soup2= BeautifulSoup(hurl.text, 'html.parser')
 			is_present = bool(re.search('You have entered a malformed request',hurl.text))
 			if is_present == True:
-				print "Securityfocuse found autobot request, Check URL manually"
+				print ("\033[1;31;40mSecurityfocuse found autobot request, Check URL manually  \033[0;0m")
 				time.sleep(2)
 				exploitcollect.append("Not Confirm:"+str(link.get("href")))
 			else:
@@ -461,36 +746,37 @@ def detailfinder(x):
 					for link2 in right_table6:
 						exploitcollect.append("https://www.securityfocus.com/"+str(link2.get('href')))
 				if any("Reports indicate" in s for s in right_table5):
-					print "Exploit found:"+str(link.get("href"))
+					print ("Exploit found:"+str(link.get("href")))
 					exploitcollect.append(link.get("href"))
 				elif any("An attacker can" in s for s in right_table5):
-					print "Exploit found:"+str(link.get("href"))
+					print ("Exploit found:"+str(link.get("href")))
 					exploitcollect.append(link.get("href"))
 				elif any("researchers" in s for s in right_table5):
-					print "Exploit found:"+str(link.get("href"))
+					print ("Exploit found:"+str(link.get("href")))
 					exploitcollect.append(link.get("href"))
 				elif any("Metasploit" in s for s in right_table5):
-					print "Exploit found:"+str(link.get("href"))
+					print ("Exploit found:"+str(link.get("href")))
 					exploitcollect.append(link.get("href"))
 				elif any("we are not aware of any working exploits" in s for s in right_table5):
-					print "Scurityfocus: No exploit detail found"
+					print ("Scurityfocus: No exploit detail found")
 				elif any("Please see the references" in s for s in right_table5):
-					print "POC found:"+str(link.get("href"))
+					print ("POC found:"+str(link.get("href")))
 					exploitcollect.append(link.get("href"))
 				else:
-					print "No Exploit found \n"
+					print ("\033[1;31;40mNo Exploit found\033[0;0m \n")
 		else:
-			print link.get("href")
+			print (link.get("href"))
 		referB.append(link.get("href"))
+	exploitcollect.append(awsmPoc(str(x)))
+	print ("\n")
+	print ("\033[1;31;40mExploit Details:\033[0;0m")
 	
-	print "\n"
-	print "Exploit Details:"
 	for ii in exploitcollect:
-		print ii
-	print "======================================================================================="
+		print (ii)
+	print ("=======================================================================================")
 	return ";".join(cvcnum),auth,vultype,"\n".join(metaexploit),"\n".join(referB),"\n".join(exploitcollect),desc2,vult
 if __name__ == '__main__':
-	print """
+	print ("""
  /$$   /$$           /$$           /$$   /$$     /$$   /$$                       /$$    
 | $$  / $$          | $$          |__/  | $$    | $$  | $$                      | $$    
 |  $$/ $$/  /$$$$$$ | $$  /$$$$$$  /$$ /$$$$$$  | $$  | $$ /$$   /$$ /$$$$$$$  /$$$$$$  
@@ -501,12 +787,11 @@ if __name__ == '__main__':
 |__/  |__/| $$____/ |__/ \______/ |__/   \___/  |__/  |__/ \______/ |__/  |__/   \___/  
           | $$                                                                          
           | $$                                                                          
-          |__/                                                                          
-"""
-	print "======================================================================================="
-	print "        Coded By : Umang a.k.a H4ck3r B4b4"
-	print "        For Help : XploitHunt.py -h"
-	print "======================================================================================="
+          |__/""")
+	print ("=======================================================================================")
+	print ("        Coded By : Umang a.k.a H4ck3r B4b4")
+	print ("        For Help : XploitHunt.py -h")
+	print ("=======================================================================================")
 	parser = argparse.ArgumentParser(description="XploitHunt is developed with the aim of automating the task to find public exploit details using CVE-ID/s. In the current version, it is capable of performing the search operation in various websites such as cvedetails, Google and ZeroDay(onion version).",add_help=True,conflict_handler='resolve')
 	parser.add_argument("-c", "--cve", dest="cveList", default=None,help="Target CVE-ID/s (i.e. CVE-ID-XXXX-XXXX,CVE-ID-XXXX-XXXX)")
 	parser.add_argument("-f", "--file", dest="cveFile", default=None,help="A file containing a list of CVE-IDs to search(i.e. CVE-ID-XXXX-XXXX). One CVE-ID per line. (.txt)")
@@ -525,9 +810,12 @@ if __name__ == '__main__':
 	vult=""
 	odaystatus=str(args.OdaySearch)
 	if (odaystatus == "on"):
-		print "XploitHunt is in Process to start Tor Service...\n"
-		os.system("service tor start")
-		time.sleep(5)
+		if ("inactive" == str(torstatuss()).strip()):
+			print ("\033[1;31;40mXploitHunt is in Process to start Tor Service...\033[0;0m\n")
+			os.system("service tor start")
+			time.sleep(2)
+		else:
+			print ("\033[1;31;40mTor is Installed and running\033[0;0m\n")
 	googlestatus=str(args.GoogleSearch)
 	googleActiver(args.cveList,args.cveFile)
 	os.system("service tor stop")

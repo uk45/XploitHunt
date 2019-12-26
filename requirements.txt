@@ -4,4 +4,4 @@ google_search==1.0.2
 requests==2.21.0
 xlrd==1.2.0
 beautifulsoup4==4.8.0
-xlsxwriter==1.1.8
+xlsxwriter==1.2.0
