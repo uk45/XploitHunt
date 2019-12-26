@@ -41,7 +41,7 @@ search engines and websites by providing the CVE-ID:
 -   Google (Search engine that is trained as per your search of CVE-ID)
 
 -   Cvedetails[.]com
-
+-   cxsecurity[.]com
 -   zeroday (Onion website)
 
 **Why one more exploit finder script?**
@@ -66,7 +66,7 @@ search engines and websites by providing the CVE-ID:
 
 **PREREQUISITES**
 
-1.  **Kali Linux and Python 2.7 required**
+1.  **Kali Linux and Python required**
 
 2.  **Repository Information:**
 
@@ -86,7 +86,7 @@ search engines and websites by providing the CVE-ID:
 
 **Usage Examples:**
 
-![XploitHunt-Help](https://i.ibb.co/qdDVQMR/2.png)
+![XploitHunt-Help](https://i.ibb.co/g724kth/home.png)
 
 1.  Normal scan without google and 0day search
 
